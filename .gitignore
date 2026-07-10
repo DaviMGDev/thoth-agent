@@ -1,0 +1,16 @@
+# Binary
+my-agent
+my-agent.exe
+
+# Test binaries
+*.test
+*.test.exe
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor temp files
+*~
+*.swp
+*.swo
