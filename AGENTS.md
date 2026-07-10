@@ -16,7 +16,7 @@
 - **Run tests verbosely**: `go test -v ./...`
 - **Run tests with coverage**: `go test -cover ./...`
 
-> Tests are in `llm_test.go`. The `MockLLM` implementation in `llm.go` echoes the user's input and is designed to simplify unit testing of code that depends on the `LLM` interface.
+> Tests are in `llm_test.go`, `ollama_test.go`, and `agent_test.go`. The `MockLLM` implementation in `llm.go` echoes the user's input and is designed to simplify unit testing of code that depends on the `LLM` interface.
 
 ## Code Style
 
@@ -33,23 +33,72 @@
 
 ## Architecture
 
-- **Pattern**: Interface-based design — the `LLM` interface abstracts provider-specific implementations
+- **Pattern**: Interface-based design — the `LLM` interface abstracts provider-specific implementations; the `Agent` interface orchestrates tool-using conversations
 - **Structure**: Flat package (`package main`) — suitable for early-stage prototyping
 - **Key files**:
-  - `llm.go` — `LLM` interface definition, request/response types, message roles, usage stats, streaming types (`ChatStream`, `ChatChunk`, `ToolCallDelta`), `MockLLM` implementation, and `MockChatStream` implementation
+  - `llm.go` — `LLM` interface definition, shared types (`Message`, `ChatRequest`, `ChatResponse`, `UsageStats`, `FinishReason`, `ChatStream`, `ChatChunk`, `ToolCallDelta`, `ToolCall`, `ToolDef`, `ToolFunction`, `Tool` interface), `MockLLM` implementation, and `MockChatStream` implementation
   - `ollama.go` — `OllamaLLM` provider implementation for local Ollama instances
-  - `main.go` — entry point demonstrating usage of the mock implementation
+  - `agent.go` — `Agent` interface, `FunctionCallingAgent` (concrete agent with tool-calling loop and parallel tool execution), `AgentStream`, `MockAgent`, `MockTool`
+  - `main.go` — entry point (REPL interactive chat with Ollama)
 
 ## Dependencies
 
 - **Current state**: Zero external dependencies (stdlib only: `context`, `fmt`)
 - **Design intent**: Providers can be added as new types implementing the `LLM` interface, keeping the core lightweight
 
-## Notes for AI Agents
+## Shared Types
 
-- This is an early-stage project with a clean, minimal surface. The `LLM` interface is the primary abstraction point — any provider (OpenAI, Anthropic, Ollama, etc.) should implement `Chat(ctx, *ChatRequest)`, `Complete(ctx, prompt)`, and `StreamChat(ctx, *ChatRequest)`.
-- The `FinishReason` enum and `UsageStats` struct align with common LLM API patterns, making integration straightforward.
-- **Streaming**: The `StreamChat` method uses the iterator pattern (`ChatStream` with `Next()`, `Current()`, `Err()`, `Close()`), matching the approach used by the OpenAI Go SDK. The caller **must** call `Close()` when done. The `ChatChunk` type carries incremental `Content`, `ToolCalls` (for tool call streaming), `FinishReason`, and `Usage`.
-- **Tool call streaming**: `ToolCallDelta` supports incremental tool call fragments by index. Providers should emit deltas with `Index` to identify which tool call the fragment belongs to, and the agent should accumulate partial JSON arguments.
-- When adding a new provider, add a new file (e.g., `openai.go`, `anthropic.go`) with a struct that implements the `LLM` interface.
-- The project includes a built-in `OllamaLLM` provider (`ollama.go`) that connects to Ollama's `/api/chat` endpoint. It uses only stdlib (`net/http`, `encoding/json`, `bufio`). The zero value is usable with sensible defaults. Tests use `httptest.NewServer` to mock Ollama without requiring a running instance.
+| Type | Description |
+|------|-------------|
+| `Message` | Chat message with `Role`, `Content`, and `ToolCalls` (for assistant tool-call messages) |
+| `ChatRequest` | Input to `Chat()`: messages, model, temperature, max tokens, stop sequences, tools |
+| `ChatResponse` | Output from `Chat()`: response message, model, token usage, finish reason |
+| `UsageStats` | Token counts for prompt, completion, and total |
+| `FinishReason` | Why generation stopped (`stop`, `length`, `error`, `content_filter`) |
+| `Tool` | Interface for defining callable tools: `Name()`, `Description()`, `Schema()`, `Execute()` |
+| `ToolCall` | A tool call made by the LLM (non-streaming) |
+| `ToolCallDelta` | Incremental tool call fragment for streaming |
+| `ToolDef` / `ToolFunction` | Serializable tool definition for provider API requests |
+
+## Messages & Roles
+
+- `RoleSystem` — system-level instruction
+- `RoleUser` — end-user message
+- `RoleAssistant` — AI assistant message (may carry `ToolCalls`)
+- `RoleTool` — tool execution result
+
+## Streaming
+
+- `ChatStream` — iterator pattern (`Next()`, `Current()`, `Err()`, `Close()`) matching OpenAI Go SDK. The caller **must** call `Close()` when done.
+- `ChatChunk` — carries incremental `Content`, `ToolCalls` (as `ToolCallDelta`), `FinishReason`, and `Usage`.
+- `AgentStream` — same iterator pattern as `ChatStream`, yields `AgentChunk` events (`token`, `tool_call`, `tool_result`, `done`).
+
+## Tool Calling
+
+- Define tools by implementing the `Tool` interface (`Name()`, `Description()`, `Schema()`, `Execute()`).
+- Pass tools via `ChatRequest.Tools` — providers serialize them automatically via `ToolDefs()`.
+- The LLM can respond with tool calls in `Message.ToolCalls` (non-streaming) or `ChatChunk.ToolCalls` (streaming).
+- `FunctionCallingAgent` orchestrates the full loop: call LLM → if tool calls → execute tools in parallel (`sync.WaitGroup`) → feed results back → repeat until the LLM responds with content.
+
+## Key Files
+
+- `llm.go` — `LLM` interface, all shared types, `Tool` interface, `MockLLM`, `MockChatStream`
+- `ollama.go` — `OllamaLLM` provider (stdlib only, connects to Ollama's `/api/chat`)
+- `agent.go` — `Agent` interface, `FunctionCallingAgent`, `AgentStream`, `MockAgent`, `MockTool`
+- `main.go` — REPL entry point (interactive Ollama chat)
+
+## Providers
+
+Add a new provider by creating a file (e.g., `openai.go`, `anthropic.go`) with a struct that implements the `LLM` interface:
+
+```go
+type OpenAILLM struct {
+	apiKey string
+}
+
+func (o *OpenAILLM) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, error) { ... }
+func (o *OpenAILLM) Complete(ctx context.Context, prompt string) (string, error) { ... }
+func (o *OpenAILLM) StreamChat(ctx context.Context, req *ChatRequest) (ChatStream, error) { ... }
+```
+
+The built-in `OllamaLLM` uses only stdlib (`net/http`, `encoding/json`, `bufio`). The zero value is usable (defaults to `http://localhost:11434` and `http.DefaultClient`). Tests use `httptest.NewServer` to mock Ollama without a running instance.
