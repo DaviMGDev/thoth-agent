@@ -4,8 +4,11 @@ BINARY := my-agent
 
 all: fmt lint test build
 
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+LDFLAGS := -ldflags="-X main.Version=$(VERSION)"
+
 build:
-	go build -o $(BINARY) ./cmd/my-agent/
+	go build $(LDFLAGS) -o $(BINARY) ./cmd/my-agent/
 
 test:
 	go test ./internal/... ./cmd/...
