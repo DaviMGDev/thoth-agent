@@ -36,7 +36,7 @@
 - **Pattern**: Interface-based design — the `LLM` interface abstracts provider-specific implementations
 - **Structure**: Flat package (`package main`) — suitable for early-stage prototyping
 - **Key files**:
-  - `llm.go` — `LLM` interface definition, request/response types, message roles, usage stats, and `MockLLM` implementation
+  - `llm.go` — `LLM` interface definition, request/response types, message roles, usage stats, streaming types (`ChatStream`, `ChatChunk`, `ToolCallDelta`), `MockLLM` implementation, and `MockChatStream` implementation
   - `main.go` — entry point demonstrating usage of the mock implementation
 
 ## Dependencies
@@ -46,6 +46,8 @@
 
 ## Notes for AI Agents
 
-- This is an early-stage project with a clean, minimal surface. The `LLM` interface is the primary abstraction point — any provider (OpenAI, Anthropic, Ollama, etc.) should implement `Chat(ctx, *ChatRequest)` and `Complete(ctx, prompt)`.
+- This is an early-stage project with a clean, minimal surface. The `LLM` interface is the primary abstraction point — any provider (OpenAI, Anthropic, Ollama, etc.) should implement `Chat(ctx, *ChatRequest)`, `Complete(ctx, prompt)`, and `StreamChat(ctx, *ChatRequest)`.
 - The `FinishReason` enum and `UsageStats` struct align with common LLM API patterns, making integration straightforward.
+- **Streaming**: The `StreamChat` method uses the iterator pattern (`ChatStream` with `Next()`, `Current()`, `Err()`, `Close()`), matching the approach used by the OpenAI Go SDK. The caller **must** call `Close()` when done. The `ChatChunk` type carries incremental `Content`, `ToolCalls` (for tool call streaming), `FinishReason`, and `Usage`.
+- **Tool call streaming**: `ToolCallDelta` supports incremental tool call fragments by index. Providers should emit deltas with `Index` to identify which tool call the fragment belongs to, and the agent should accumulate partial JSON arguments.
 - When adding a new provider, add a new file (e.g., `openai.go`, `anthropic.go`) with a struct that implements the `LLM` interface.

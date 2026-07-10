@@ -4,12 +4,13 @@ A Go-based LLM agent framework with a generic chat completion interface and buil
 
 ## Overview
 
-`my-agent` defines a minimal `LLM` interface that abstracts provider-specific LLM interactions behind two methods:
+`my-agent` defines a minimal `LLM` interface that abstracts provider-specific LLM interactions behind three methods:
 
 - **`Chat(ctx, *ChatRequest)`** — Conversational chat with message history, model selection, and generation parameters.
 - **`Complete(ctx, prompt)`** — Single-turn text completion.
+- **`StreamChat(ctx, *ChatRequest)`** — Streaming chat via an iterator pattern (`ChatStream`).
 
-The project ships with a `MockLLM` implementation that echoes back the user's input, making it easy to write unit tests and prototype agent logic without an API key.
+The project ships with a `MockLLM` implementation that echoes back the user's input, making it easy to write unit tests and prototype agent logic without an API key. The mock also supports streaming via `MockChatStream`.
 
 ## Types
 
@@ -20,8 +21,13 @@ The project ships with a `MockLLM` implementation that echoes back the user's in
 | `ChatResponse` | Output from `Chat()`: response message, model name, token usage, finish reason |
 | `UsageStats` | Token counts for prompt, completion, and total |
 | `FinishReason` | Why generation stopped (`stop`, `length`, `error`, `content_filter`) |
+| `ChatStream` | Iterator interface (`Next()`, `Current()`, `Err()`, `Close()`) for streaming chunks |
+| `ChatChunk` | One incremental delta: `Content`, `Role`, `ToolCalls`, `FinishReason`, `Usage` |
+| `ToolCallDelta` | Incremental tool call fragment for streaming: `Index`, `ID`, `Function` |
 
 ## Getting Started
+
+### Blocking Chat
 
 ```go
 package main
@@ -54,7 +60,53 @@ func main() {
 
 ```bash
 go run .
-# Output: Response: Hello, how are you?
+# Output: Chat Response: Hello, how are you?
+#         Hello from streaming!
+#         [stop] tokens: 42
+#         Streamed complete: Hello from streaming!
+```
+
+### Streaming Chat
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"strings"
+)
+
+func main() {
+	mock := &MockLLM{}
+	req := &ChatRequest{
+		Messages: []Message{
+			{Role: RoleUser, Content: "Hello from streaming!"},
+		},
+		Model: "mock-model",
+	}
+
+	stream, err := mock.StreamChat(context.Background(), req)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	defer stream.Close()
+
+	var full strings.Builder
+	for stream.Next() {
+		chunk := stream.Current()
+		fmt.Print(chunk.Content)
+		full.WriteString(chunk.Content)
+		if chunk.FinishReason != "" {
+			fmt.Printf("\n[%s] tokens: %d\n", chunk.FinishReason, chunk.Usage.TotalTokens)
+		}
+	}
+	if err := stream.Err(); err != nil {
+		fmt.Println("\nStream error:", err)
+		return
+	}
+}
 ```
 
 ## Extending
