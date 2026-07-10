@@ -125,7 +125,51 @@ func (o *OpenAILLM) Chat(ctx context.Context, req *ChatRequest) (*ChatResponse, 
 func (o *OpenAILLM) Complete(ctx context.Context, prompt string) (string, error) {
 	// Real completion call
 }
+
+func (o *OpenAILLM) StreamChat(ctx context.Context, req *ChatRequest) (ChatStream, error) {
+	// Real streaming call
+}
 ```
+
+## Providers
+
+### Ollama
+
+The project ships with a built-in `OllamaLLM` provider that connects to a local [Ollama](https://ollama.com/) instance.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+)
+
+func main() {
+	ollama := &OllamaLLM{
+		BaseURL: "http://localhost:11434", // default
+	}
+
+	resp, err := ollama.Chat(context.Background(), &ChatRequest{
+		Messages: []Message{
+			{Role: RoleUser, Content: "Why is the sky blue?"},
+		},
+		Model: "llama3.2",
+	})
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("Response:", resp.Message.Content)
+}
+```
+
+The `OllamaLLM` zero value is usable (defaults to `http://localhost:11434` and `http.DefaultClient`).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `BaseURL` | `string` | `http://localhost:11434` | Ollama server URL |
+| `HTTPClient` | `*http.Client` | `http.DefaultClient` | HTTP client for API calls |
 
 ## License
 

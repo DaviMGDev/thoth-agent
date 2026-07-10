@@ -37,6 +37,7 @@
 - **Structure**: Flat package (`package main`) — suitable for early-stage prototyping
 - **Key files**:
   - `llm.go` — `LLM` interface definition, request/response types, message roles, usage stats, streaming types (`ChatStream`, `ChatChunk`, `ToolCallDelta`), `MockLLM` implementation, and `MockChatStream` implementation
+  - `ollama.go` — `OllamaLLM` provider implementation for local Ollama instances
   - `main.go` — entry point demonstrating usage of the mock implementation
 
 ## Dependencies
@@ -51,3 +52,4 @@
 - **Streaming**: The `StreamChat` method uses the iterator pattern (`ChatStream` with `Next()`, `Current()`, `Err()`, `Close()`), matching the approach used by the OpenAI Go SDK. The caller **must** call `Close()` when done. The `ChatChunk` type carries incremental `Content`, `ToolCalls` (for tool call streaming), `FinishReason`, and `Usage`.
 - **Tool call streaming**: `ToolCallDelta` supports incremental tool call fragments by index. Providers should emit deltas with `Index` to identify which tool call the fragment belongs to, and the agent should accumulate partial JSON arguments.
 - When adding a new provider, add a new file (e.g., `openai.go`, `anthropic.go`) with a struct that implements the `LLM` interface.
+- The project includes a built-in `OllamaLLM` provider (`ollama.go`) that connects to Ollama's `/api/chat` endpoint. It uses only stdlib (`net/http`, `encoding/json`, `bufio`). The zero value is usable with sensible defaults. Tests use `httptest.NewServer` to mock Ollama without requiring a running instance.
