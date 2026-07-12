@@ -42,10 +42,12 @@ type AgentResponse struct {
 type AgentEventType string
 
 const (
-	AgentEventToken      AgentEventType = "token"       // LLM streaming token
-	AgentEventToolCall   AgentEventType = "tool_call"   // LLM requested a tool
-	AgentEventToolResult AgentEventType = "tool_result" // tool returned a result
-	AgentEventDone       AgentEventType = "done"        // agent finished
+	AgentEventToken          AgentEventType = "token"           // LLM streaming token
+	AgentEventToolCall       AgentEventType = "tool_call"       // LLM requested a tool
+	AgentEventToolStart      AgentEventType = "tool_start"      // tool execution started
+	AgentEventToolResult     AgentEventType = "tool_result"     // tool returned a result
+	AgentEventIterationStart AgentEventType = "iteration_start" // new iteration begins
+	AgentEventDone           AgentEventType = "done"            // agent finished
 )
 
 // ToolResultEvent carries the result of a tool execution.
@@ -65,7 +67,9 @@ type AgentChunk struct {
 	ToolResult *ToolResultEvent   `json:"tool_result,omitempty"`
 	Usage      *llm.UsageStats    `json:"usage,omitempty"`
 	Done       bool               `json:"done,omitempty"`
-	Error      string             `json:"error,omitempty"` // non-empty when the agent encounters a fatal error
+	Error      string             `json:"error,omitempty"`      // non-empty when the agent encounters a fatal error
+	Iteration  int                `json:"iteration,omitempty"`  // current iteration index (for iteration_start)
+	MaxIter    int                `json:"max_iter,omitempty"`   // max iterations for this run (for iteration_start)
 }
 
 // AgentStream is a streaming iterator over agent execution events.
@@ -379,6 +383,12 @@ func (a *FunctionCallingAgent) streamLoop(ctx context.Context, req *AgentRequest
 		default:
 		}
 
+		safeSend(ctx, ch, AgentChunk{
+			Type:      AgentEventIterationStart,
+			Iteration: iter,
+			MaxIter:   maxIter,
+		})
+
 		chatReq := &llm.ChatRequest{
 			Messages:      messages,
 			Model:         req.Model,
@@ -509,6 +519,23 @@ func (a *FunctionCallingAgent) streamLoop(ctx context.Context, req *AgentRequest
 
 			assistantMsg.ToolCalls = toolCalls
 			messages = append(messages, assistantMsg)
+
+			// Yield tool_start events
+			for _, tc := range toolCalls {
+				safeSend(ctx, ch, AgentChunk{
+					Type: AgentEventToolStart,
+					ToolCall: &llm.ToolCallDelta{
+						ID: tc.ID,
+						Function: struct {
+							Name      string `json:"name,omitempty"`
+							Arguments string `json:"arguments,omitempty"`
+						}{
+							Name:      tc.Function.Name,
+							Arguments: tc.Function.Arguments,
+						},
+					},
+				})
+			}
 
 			// Execute tools in parallel (P4/P5 fire inside executeTools)
 			results := a.executeTools(ctx, toolCalls, req.Tools)

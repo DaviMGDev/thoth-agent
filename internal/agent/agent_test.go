@@ -331,7 +331,9 @@ func TestFunctionCallingAgent_StreamRun_Basic(t *testing.T) {
 	var tokens []string
 	for stream.Next() {
 		chunk := stream.Current()
-		tokens = append(tokens, chunk.Content)
+		if chunk.Type == AgentEventToken {
+			tokens = append(tokens, chunk.Content)
+		}
 		if chunk.Done {
 			if chunk.Usage == nil {
 				t.Error("expected usage in done chunk")
