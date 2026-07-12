@@ -65,6 +65,7 @@ type AgentChunk struct {
 	ToolResult *ToolResultEvent   `json:"tool_result,omitempty"`
 	Usage      *llm.UsageStats    `json:"usage,omitempty"`
 	Done       bool               `json:"done,omitempty"`
+	Error      string             `json:"error,omitempty"` // non-empty when the agent encounters a fatal error
 }
 
 // AgentStream is a streaming iterator over agent execution events.
@@ -346,6 +347,7 @@ func (a *FunctionCallingAgent) streamLoop(ctx context.Context, req *AgentRequest
 		var hookErr error
 		req, hookErr = applyBeforeAgent(ctx, a.Hooks, req)
 		if hookErr != nil {
+			ch <- AgentChunk{Type: AgentEventDone, Done: true, Error: fmt.Sprintf("before-agent hook: %v", hookErr)}
 			return
 		}
 	}
@@ -382,12 +384,14 @@ func (a *FunctionCallingAgent) streamLoop(ctx context.Context, req *AgentRequest
 			var hookErr error
 			chatReq, hookErr = applyBeforeLLM(ctx, a.Hooks, chatReq)
 			if hookErr != nil {
+				ch <- AgentChunk{Type: AgentEventDone, Done: true, Error: fmt.Sprintf("before-llm hook: %v", hookErr)}
 				return
 			}
 		}
 
 		llmStream, err := a.LLM.StreamChat(ctx, chatReq)
 		if err != nil {
+			ch <- AgentChunk{Type: AgentEventDone, Done: true, Error: fmt.Sprintf("llm call: %v", err)}
 			return
 		}
 
@@ -443,6 +447,7 @@ func (a *FunctionCallingAgent) streamLoop(ctx context.Context, req *AgentRequest
 			var hookErr error
 			accumulatedResp, hookErr = applyAfterLLM(ctx, a.Hooks, chatReq, accumulatedResp)
 			if hookErr != nil {
+				ch <- AgentChunk{Type: AgentEventDone, Done: true, Error: fmt.Sprintf("after-llm hook: %v", hookErr)}
 				return
 			}
 		}

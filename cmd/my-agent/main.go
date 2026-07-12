@@ -81,7 +81,9 @@ func main() {
 		}
 
 		var reply strings.Builder
+		gotAny := false
 		for stream.Next() {
+			gotAny = true
 			chunk := stream.Current()
 			switch chunk.Type {
 			case agent.AgentEventToken:
@@ -101,7 +103,9 @@ func main() {
 					fmt.Printf("✅ %s → %s\n", chunk.ToolResult.Name, strings.TrimSpace(result))
 				}
 			case agent.AgentEventDone:
-				// Agent finished — break out of the loop.
+				if chunk.Error != "" {
+					fmt.Fprintf(os.Stderr, "\nagent error: %s\n", chunk.Error)
+				}
 			}
 		}
 		if err := stream.Err(); err != nil {
@@ -110,6 +114,12 @@ func main() {
 			continue
 		}
 		stream.Close()
+
+		if !gotAny {
+			fmt.Fprintln(os.Stderr, "(no response — is Ollama running? try: ollama serve)")
+			messages = messages[:len(messages)-1]
+			continue
+		}
 
 		messages = append(messages, llm.Message{Role: llm.RoleAssistant, Content: reply.String()})
 		fmt.Println()
