@@ -31,7 +31,7 @@ func main() {
 
 	llmProvider := &ollama.OllamaLLM{}
 	ag := &agent.FunctionCallingAgent{LLM: llmProvider}
-	model := "ministral-3:3b-cloud"
+	model := "gemma4:31b-cloud"
 
 	registeredTools := []llm.Tool{
 		&tools.GetTimeTool{},
