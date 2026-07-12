@@ -308,7 +308,7 @@ func TestOllamaLLM_StreamChat_ToolCalls(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/x-ndjson")
 
-		// Ollama returns tool calls as a single chunk with tool_calls
+		// Ollama returns tool calls with arguments as a JSON string.
 		fmt.Fprintln(w, `{"model":"ministral-3b:cloud","message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"get_weather","arguments":"{\"city\":\"Tokyo\"}"}}]},"done":false}`)
 		flusher.Flush()
 		fmt.Fprintln(w, `{"model":"ministral-3b:cloud","message":{"role":"assistant","content":""},"done":true,"done_reason":"stop","prompt_eval_count":15,"eval_count":10}`)
@@ -349,6 +349,61 @@ func TestOllamaLLM_StreamChat_ToolCalls(t *testing.T) {
 	}
 	if tcs[0].Function.Arguments != `{"city":"Tokyo"}` {
 		t.Errorf("expected arguments %q, got %q", `{"city":"Tokyo"}`, tcs[0].Function.Arguments)
+	}
+}
+
+func TestOllamaLLM_StreamChat_ToolCalls_ArgumentsAsObject(t *testing.T) {
+	t.Parallel()
+
+	// Simulate gemma4-style response where arguments is a JSON object, not a string.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			t.Fatal("server does not support flushing")
+		}
+		w.Header().Set("Content-Type", "application/x-ndjson")
+
+		fmt.Fprintln(w, `{"model":"gemma4","message":{"role":"assistant","content":"","tool_calls":[{"function":{"name":"read_file","arguments":{"path":"CHANGELOG.md"}}}]},"done":false}`)
+		flusher.Flush()
+		fmt.Fprintln(w, `{"model":"gemma4","message":{"role":"assistant","content":""},"done":true,"done_reason":"stop"}`)
+		flusher.Flush()
+	}))
+	defer server.Close()
+
+	ollamaLLM := &OllamaLLM{BaseURL: server.URL}
+	stream, err := ollamaLLM.StreamChat(context.Background(), &llm.ChatRequest{
+		Messages: []llm.Message{{Role: llm.RoleUser, Content: "read CHANGELOG.md"}},
+		Model:    "gemma4",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer stream.Close()
+
+	var toolCallChunks []llm.ChatChunk
+	for stream.Next() {
+		chunk := stream.Current()
+		if len(chunk.ToolCalls) > 0 {
+			toolCallChunks = append(toolCallChunks, chunk)
+		}
+	}
+	if err := stream.Err(); err != nil {
+		t.Fatalf("stream error: %v", err)
+	}
+
+	if len(toolCallChunks) != 1 {
+		t.Fatalf("expected 1 chunk with tool calls, got %d", len(toolCallChunks))
+	}
+	tcs := toolCallChunks[0].ToolCalls
+	if len(tcs) != 1 {
+		t.Fatalf("expected 1 tool call delta, got %d", len(tcs))
+	}
+	if tcs[0].Function.Name != "read_file" {
+		t.Errorf("expected function name %q, got %q", "read_file", tcs[0].Function.Name)
+	}
+	// Arguments should be normalized from JSON object to JSON string.
+	if tcs[0].Function.Arguments != `{"path":"CHANGELOG.md"}` {
+		t.Errorf("expected normalized arguments %q, got %q", `{"path":"CHANGELOG.md"}`, tcs[0].Function.Arguments)
 	}
 }
 

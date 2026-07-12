@@ -49,8 +49,26 @@ type ollamaToolCall struct {
 }
 
 type ollamaToolCallFunction struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"` // JSON object serialized as raw string
+	Name      string          `json:"name"`
+	Arguments json.RawMessage `json:"arguments"` // JSON string or JSON object, depending on model
+}
+
+// normalizeArguments converts the arguments field (which may be a JSON string
+// or a JSON object) into a plain string suitable for ToolCall.Arguments.
+func normalizeArguments(raw json.RawMessage) string {
+	if len(raw) == 0 || string(raw) == "null" {
+		return ""
+	}
+	// If it starts with '{', it's already a JSON object — use as-is.
+	if raw[0] == '{' {
+		return string(raw)
+	}
+	// Otherwise it's a JSON string — unquote it.
+	var s string
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return ""
+	}
+	return s
 }
 
 type ollamaToolDef struct {
@@ -120,7 +138,7 @@ func toOllamaToolCalls(tcs []llm.ToolCall) []ollamaToolCall {
 		out[i] = ollamaToolCall{
 			Function: ollamaToolCallFunction{
 				Name:      tc.Function.Name,
-				Arguments: tc.Function.Arguments,
+				Arguments: json.RawMessage(tc.Function.Arguments),
 			},
 		}
 	}
@@ -171,7 +189,7 @@ func toToolCallDeltas(ollamaCalls []ollamaToolCall) []llm.ToolCallDelta {
 				Arguments string `json:"arguments,omitempty"`
 			}{
 				Name:      tc.Function.Name,
-				Arguments: tc.Function.Arguments,
+				Arguments: normalizeArguments(tc.Function.Arguments),
 			},
 		}
 	}
@@ -191,7 +209,7 @@ func toToolCalls(ollamaCalls []ollamaToolCall) []llm.ToolCall {
 				Arguments string `json:"arguments,omitempty"`
 			}{
 				Name:      tc.Function.Name,
-				Arguments: tc.Function.Arguments,
+				Arguments: normalizeArguments(tc.Function.Arguments),
 			},
 		}
 	}
