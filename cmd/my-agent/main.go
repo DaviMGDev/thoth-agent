@@ -11,6 +11,7 @@ import (
 	"my-agent/internal/agent"
 	"my-agent/internal/llm"
 	"my-agent/internal/providers/ollama"
+	"my-agent/internal/tools"
 )
 
 // Version is set at build time via -ldflags.
@@ -31,6 +32,11 @@ func main() {
 	llmProvider := &ollama.OllamaLLM{}
 	ag := &agent.FunctionCallingAgent{LLM: llmProvider}
 	model := "ministral-3:3b-cloud"
+
+	registeredTools := []llm.Tool{
+		&tools.GetTimeTool{},
+		&tools.ReadFileTool{},
+	}
 
 	var messages []llm.Message
 	scanner := bufio.NewScanner(os.Stdin)
@@ -62,6 +68,7 @@ func main() {
 		req := &agent.AgentRequest{
 			Messages: messages,
 			Model:    model,
+			Tools:    registeredTools,
 		}
 
 		stream, err := ag.StreamRun(context.Background(), req)
@@ -81,11 +88,18 @@ func main() {
 				fmt.Print(chunk.Content)
 				reply.WriteString(chunk.Content)
 			case agent.AgentEventToolCall:
-				// The agent is calling a tool — no output shown to the user.
-				// Tool execution and its result are handled internally by the agent.
+				if chunk.ToolCall != nil {
+					fmt.Printf("\n🔧 calling %s(%s)\n", chunk.ToolCall.Function.Name, chunk.ToolCall.Function.Arguments)
+				}
 			case agent.AgentEventToolResult:
-				// Tool result received — no output shown.
-				// The agent will feed this back to the LLM automatically.
+				if chunk.ToolResult != nil {
+					// Truncate long results for readability
+					result := chunk.ToolResult.Result
+					if len(result) > 200 {
+						result = result[:200] + "..."
+					}
+					fmt.Printf("✅ %s → %s\n", chunk.ToolResult.Name, strings.TrimSpace(result))
+				}
 			case agent.AgentEventDone:
 				// Agent finished — break out of the loop.
 			}
