@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"my-agent/internal/agent"
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/agent"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"

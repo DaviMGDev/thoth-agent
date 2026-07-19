@@ -16,7 +16,7 @@ decision to accept this refined model was recorded on 2026-07-17.
 
 ## Context
 
-The agent's Bubble Tea TUI (`cmd/my-agent/tui.go`) renders a vertical stream of events
+The agent's Bubble Tea TUI (`cmd/thoth-agent/tui.go`) renders a vertical stream of events
 from the agent loop (`internal/agent/agent.go`). These events fall into distinct visual
 categories:
 

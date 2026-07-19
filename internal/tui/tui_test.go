@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

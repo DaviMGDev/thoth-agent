@@ -6,7 +6,7 @@
 
 ## Context
 
-The `my-agent` Bubble Tea TUI (`cmd/my-agent/tui.go`) renders agent responses inside a styled viewport. Users frequently want to copy the last assistant response — code blocks, structured data, file paths returned by tools — either to paste elsewhere or to feed back into the conversation.
+The `thoth-agent` Bubble Tea TUI (`cmd/thoth-agent/tui.go`) renders agent responses inside a styled viewport. Users frequently want to copy the last assistant response — code blocks, structured data, file paths returned by tools — either to paste elsewhere or to feed back into the conversation.
 
 The current workflow requires users to:
 
@@ -115,7 +115,7 @@ This allows test doubles that verify the write without actually touching the sys
 
 3. **Select/copy via ANSI selection escape sequences** — There is no widely-supported ANSI sequence for programmatic text selection (as opposed to clipboard write). OSC 52 is the only portable clipboard write mechanism.
 
-4. **Temp file write** (`/tmp/my-agent-last-response.txt`) — Rejected because it requires the user to open a file and manually copy. This is better than nothing but not meaningfully better than mouse selection. Could be added as a secondary `/export` command if users request it.
+4. **Temp file write** (`/tmp/thoth-agent-last-response.txt`) — Rejected because it requires the user to open a file and manually copy. This is better than nothing but not meaningfully better than mouse selection. Could be added as a secondary `/export` command if users request it.
 
 5. **Clipboard via cgo** (e.g., linking `Xlib` or `CFramework`) — Rejected because it introduces platform-specific build tags and breaks cross-compilation. The pure-Go shell-out approach is simpler and more portable.
 

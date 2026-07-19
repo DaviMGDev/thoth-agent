@@ -1,6 +1,6 @@
 package tui
 
-import "my-agent/internal/llm"
+import "github.com/DaviMGDev/thoth-agent/internal/llm"
 
 // MaxMessagesPerSession is the maximum number of messages retained in a
 // session's history. When exceeded, the oldest 25% are pruned to avoid

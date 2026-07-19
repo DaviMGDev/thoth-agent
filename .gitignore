@@ -1,6 +1,6 @@
 # Binary
-/my-agent
-/my-agent.exe
+/thoth-agent
+/thoth-agent.exe
 
 # Test binaries
 *.test

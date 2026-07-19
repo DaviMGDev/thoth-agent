@@ -6,7 +6,7 @@
 
 ## Context
 
-The `my-agent` framework has a strict layered architecture (`llm` ← `agent` ← `cmd/`) with clear integration points where events naturally occur:
+The `thoth-agent` framework has a strict layered architecture (`llm` ← `agent` ← `cmd/`) with clear integration points where events naturally occur:
 
 1. **LLM layer** — chat requests, responses, streaming chunks, errors.
 2. **Agent layer** — tool calls, tool results, iteration boundaries, agent completion.
@@ -63,7 +63,7 @@ The bus is added with **no importers in the existing codebase**. Future work wil
 1. Add an optional `bus.Bus` field to `FunctionCallingAgent` (nil-safe: if nil, no events are published).
 2. Publish agent lifecycle events (`agent.tool_call`, `agent.tool_result`, `agent.iteration`, `agent.done`) in the agent loop.
 3. Optionally publish LLM events (`llm.request`, `llm.chunk`, `llm.error`) from providers.
-4. Wire subscribers in the application entry point (`cmd/my-agent/main.go`) for logging, metrics, etc.
+4. Wire subscribers in the application entry point (`cmd/thoth-agent/main.go`) for logging, metrics, etc.
 
 This phased approach keeps changes minimal and reversible.
 

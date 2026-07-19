@@ -6,7 +6,7 @@
 
 ## Context
 
-The TUI (`cmd/my-agent/tui.go`) currently has a two-column layout: a side panel
+The TUI (`cmd/thoth-agent/tui.go`) currently has a two-column layout: a side panel
 (25% width) for session management and a main area for the chat viewport + text
 input. Several structural issues exist:
 

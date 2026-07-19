@@ -1,14 +1,14 @@
-# my-agent
+# Thoth Agent
 
-[![CI](https://github.com/DaviMGDev/my-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/DaviMGDev/my-agent/actions/workflows/ci.yml)
+[![CI](https://github.com/DaviMGDev/thoth-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/DaviMGDev/thoth-agent/actions/workflows/ci.yml)
 
 A Go-based LLM agent framework with a generic chat completion interface, tool-calling agent loop, and built-in mock implementation.
 
-> **Version**: Run `my-agent --version` or see [CHANGELOG](./CHANGELOG.md).
+> **Version**: Run `thoth-agent --version` or see [CHANGELOG](./CHANGELOG.md).
 
 ## Overview
 
-`my-agent` defines a minimal `LLM` interface that abstracts provider-specific LLM interactions behind three methods:
+`thoth-agent` defines a minimal `LLM` interface that abstracts provider-specific LLM interactions behind three methods:
 
 - **`Chat(ctx, *ChatRequest)`** — Conversational chat with message history, model selection, and generation parameters.
 - **`Complete(ctx, prompt)`** — Single-turn text completion.
@@ -41,7 +41,7 @@ import (
 	"context"
 	"fmt"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 func main() {
@@ -66,7 +66,7 @@ func main() {
 ```
 
 ```bash
-go run ./cmd/my-agent/
+go run ./cmd/thoth-agent/
 # Output: Chat Response: Hello, how are you?
 #         Hello from streaming!
 #         [stop] tokens: 42
@@ -83,7 +83,7 @@ import (
 	"fmt"
 	"strings"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 func main() {
@@ -128,7 +128,7 @@ package openai
 import (
 	"context"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 type OpenAILLM struct {
@@ -161,8 +161,8 @@ import (
 	"context"
 	"fmt"
 
-	"my-agent/internal/llm"
-	"my-agent/internal/providers/ollama"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/providers/ollama"
 )
 
 func main() {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 func TestMockLLM_Chat(t *testing.T) {

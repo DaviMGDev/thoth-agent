@@ -6,7 +6,7 @@
 
 ## Context
 
-The Bubble Tea TUI (`cmd/my-agent/tui.go`) has three interactive regions:
+The Bubble Tea TUI (`cmd/thoth-agent/tui.go`) has three interactive regions:
 
 1. **Text input** — where the user types messages
 2. **Chat messages viewport** — the scrollable message history

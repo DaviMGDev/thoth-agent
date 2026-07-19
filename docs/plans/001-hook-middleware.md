@@ -23,7 +23,7 @@ package agent
 
 import (
     "context"
-    "my-agent/internal/llm"
+    "github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 // Hook intercepts the agent's execution at six defined points.
@@ -227,7 +227,7 @@ func (h *TimezoneHook) BeforeLLM(ctx context.Context, req *llm.ChatRequest) (*ll
 |------|--------|
 | `internal/bus/bus.go`, `internal/bus/memory.go`, `internal/bus/bus_test.go` | Keep bus package pristine |
 | `internal/llm/llm.go` | Interface and types unchanged |
-| `cmd/my-agent/main.go` | REPL works without hooks (nil `Hooks` = zero overhead) |
+| `cmd/thoth-agent/main.go` | REPL works without hooks (nil `Hooks` = zero overhead) |
 
 ## Verification
 

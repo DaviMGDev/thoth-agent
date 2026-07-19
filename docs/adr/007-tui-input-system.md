@@ -6,7 +6,7 @@
 
 ## Context
 
-The TUI uses `bubbles/textinput` for user input (`cmd/my-agent/tui.go` line 55).
+The TUI uses `bubbles/textinput` for user input (`cmd/thoth-agent/tui.go` line 55).
 This has three problems identified in user feedback:
 
 1. **No multiline support** — `textinput` is a single-line input. Long messages

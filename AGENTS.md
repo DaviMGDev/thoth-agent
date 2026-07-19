@@ -1,11 +1,11 @@
-# my-agent
+# Thoth Agent
 
 > A Go-based LLM agent framework defining a generic chat completion interface with typed requests/responses and a mock implementation for testing.
 
 ## Build & Development
 
-- **Run the app**: `go run ./cmd/my-agent/`
-- **Build binary**: `go build -o my-agent ./cmd/my-agent/`
+- **Run the app**: `go run ./cmd/thoth-agent/`
+- **Build binary**: `go build -o thoth-agent ./cmd/thoth-agent/`
 - **Install dependencies**: `go mod tidy`
 - **Lint**: `go vet ./internal/... ./cmd/...`
 - **Format**: `gofmt -s -w ./internal/ ./cmd/`
@@ -37,14 +37,14 @@
 - **Structure**: Module layout with `internal/` subpackages for encapsulation:
 
 ```
-my-agent/
+thoth-agent/
 ├── internal/
 │   ├── llm/                  # LLM interface + shared types + MockLLM
 │   ├── agent/                # Agent interface + FunctionCallingAgent + MockAgent + MockTool
 │   └── providers/
 │       └── ollama/           # OllamaLLM provider implementation
 ├── cmd/
-│   └── my-agent/             # main() — REPL entry point
+│   └── thoth-agent/             # main() — REPL entry point
 ├── docs/
 │   └── adr/                  # Architecture Decision Records
 ├── .golangci.yml             # Linter configuration
@@ -56,7 +56,7 @@ my-agent/
   - `internal/llm/llm.go` — `LLM` interface definition, shared types (`Message`, `ChatRequest`, `ChatResponse`, `UsageStats`, `FinishReason`, `ChatStream`, `ChatChunk`, `ToolCallDelta`, `ToolCall`, `ToolDef`, `ToolFunction`, `Tool` interface), `MockLLM` implementation, and `MockChatStream` implementation
   - `internal/providers/ollama/ollama.go` — `OllamaLLM` provider implementation for local Ollama instances
   - `internal/agent/agent.go` — `Agent` interface, `FunctionCallingAgent` (concrete agent with tool-calling loop and parallel tool execution), `AgentStream`, `MockAgent`, `MockTool`
-  - `cmd/my-agent/main.go` — entry point (REPL interactive chat with Ollama)
+  - `cmd/thoth-agent/main.go` — entry point (REPL interactive chat with Ollama)
 
 ## Architecture Decision Records
 
@@ -165,7 +165,7 @@ its boundaries.
 - `internal/llm/llm.go` — `LLM` interface, all shared types, `Tool` interface, `MockLLM`, `MockChatStream`
 - `internal/providers/ollama/ollama.go` — `OllamaLLM` provider (stdlib only, connects to Ollama's `/api/chat`)
 - `internal/agent/agent.go` — `Agent` interface, `FunctionCallingAgent`, `AgentStream`, `MockAgent`, `MockTool`
-- `cmd/my-agent/main.go` — REPL entry point (interactive Ollama chat)
+- `cmd/thoth-agent/main.go` — REPL entry point (interactive Ollama chat)
 
 ## Providers
 
@@ -174,7 +174,7 @@ Add a new provider by creating a file under `internal/providers/` (e.g., `intern
 ```go
 package openai
 
-import "my-agent/internal/llm"
+import "github.com/DaviMGDev/thoth-agent/internal/llm"
 
 type OpenAILLM struct {
 	apiKey string

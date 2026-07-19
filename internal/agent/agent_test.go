@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 // ---------------------------------------------------------------------------

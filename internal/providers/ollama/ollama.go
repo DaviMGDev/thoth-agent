@@ -9,7 +9,7 @@ import (
 	"io"
 	"net/http"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 // DefaultOllamaBaseURL is the default base URL for a local Ollama instance.

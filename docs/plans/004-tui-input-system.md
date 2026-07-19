@@ -20,15 +20,15 @@
 
 | File | Changes |
 |------|---------|
-| `cmd/my-agent/tui.go` | Replace `textinput.Model` with `textarea.Model`; add history fields; history key handling |
-| `cmd/my-agent/session.go` | Add `InputHistory`, `HistoryPos`, `PendingInput` fields; history management methods |
-| `cmd/my-agent/styles.go` | Add textarea-specific styles if needed |
+| `cmd/thoth-agent/tui.go` | Replace `textinput.Model` with `textarea.Model`; add history fields; history key handling |
+| `cmd/thoth-agent/session.go` | Add `InputHistory`, `HistoryPos`, `PendingInput` fields; history management methods |
+| `cmd/thoth-agent/styles.go` | Add textarea-specific styles if needed |
 
 ## Files NOT Touched
 
 | File | Reason |
 |------|--------|
-| `cmd/my-agent/main.go` | Entry point unchanged |
+| `cmd/thoth-agent/main.go` | Entry point unchanged |
 | `internal/agent/agent.go` | Agent logic unchanged |
 | `internal/llm/llm.go` | Core types unchanged |
 | `internal/bus/` | Bus unchanged |
@@ -208,7 +208,7 @@ is called on Enter before `startStream`.
 
 ## Verification
 
-- [ ] `go build ./cmd/my-agent/` — compiles successfully
+- [ ] `go build ./cmd/thoth-agent/` — compiles successfully
 - [ ] Text input wraps at the box boundary instead of scrolling horizontally
 - [ ] Input grows vertically up to 5 lines as text is typed
 - [ ] Beyond 5 lines, textarea scrolls its content (cursor stays at bottom)

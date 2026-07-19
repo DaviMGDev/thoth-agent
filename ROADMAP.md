@@ -1,6 +1,6 @@
 # Roadmap
 
-Planned features and improvements for my-agent.
+Planned features and improvements for thoth-agent.
 
 ## Session Management
 
@@ -18,7 +18,7 @@ Build an interactive terminal UI for chatting with agents.
 
 - Use [Bubble Tea](https://github.com/charmbracelet/bubbletea) for the TUI framework
 - Features: streaming responses, tool call visibility, model switching, conversation history
-- Replace current basic REPL in `cmd/my-agent/main.go`
+- Replace current basic REPL in `cmd/thoth-agent/main.go`
 - May evolve into a full TUI with session management panel (requires more terminal control than a simple REPL)
 
 ## Configurable Agent
@@ -27,7 +27,7 @@ Make the agent configurable via external files (YAML/TOML/JSON).
 
 - Model selection, provider settings, system prompts
 - Tool registration and enable/disable
-- Config file locations: `~/.config/my-agent/config.yaml` or `./my-agent.yaml`
+- Config file locations: `~/.config/thoth-agent/config.yaml` or `./thoth-agent.yaml`
 
 ## Multiple Providers
 

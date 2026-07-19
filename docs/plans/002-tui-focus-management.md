@@ -20,15 +20,15 @@
 
 | File | Changes |
 |------|---------|
-| `cmd/my-agent/tui.go` | Add `focusIndex` field; rewrite `handleKeyMsg` to dispatch per focus; component-specific handlers |
-| `cmd/my-agent/styles.go` | Add focused/unfocused border color variants for each panel |
+| `cmd/thoth-agent/tui.go` | Add `focusIndex` field; rewrite `handleKeyMsg` to dispatch per focus; component-specific handlers |
+| `cmd/thoth-agent/styles.go` | Add focused/unfocused border color variants for each panel |
 
 ## Files NOT Touched
 
 | File | Reason |
 |------|--------|
-| `cmd/my-agent/main.go` | Entry point unchanged |
-| `cmd/my-agent/session.go` | Session model unchanged |
+| `cmd/thoth-agent/main.go` | Entry point unchanged |
+| `cmd/thoth-agent/session.go` | Session model unchanged |
 | `internal/agent/agent.go` | Agent logic unchanged |
 | `internal/llm/llm.go` | Core types unchanged |
 
@@ -36,7 +36,7 @@
 
 ### 1. Add `focusIndex` to the model struct
 
-Location: `cmd/my-agent/tui.go`, `model` struct (around line 37)
+Location: `cmd/thoth-agent/tui.go`, `model` struct (around line 37)
 
 ```go
 type model struct {
@@ -171,7 +171,7 @@ Tab cycles focus, and within the side panel, Up/Down selects sessions.
 
 ## Verification
 
-- [ ] `go test ./cmd/my-agent/` — passes
+- [ ] `go test ./cmd/thoth-agent/` — passes
 - [ ] Tab cycles focus: input → viewport → side panel → input
 - [ ] Shift+Tab cycles focus in reverse
 - [ ] Focused component has pink border, unfocused has purple

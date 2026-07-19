@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"my-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
 )
 
 var _ llm.Tool = (*GetTimeTool)(nil)

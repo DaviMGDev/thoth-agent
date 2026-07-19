@@ -4,7 +4,7 @@
 
 ## Overview
 
-The TUI is a [Bubble Tea](https://github.com/charmbracelet/bubbletea) REPL for `my-agent`. It lives in `cmd/my-agent/` and provides an interactive chat experience with streaming responses, session management, and keyboard navigation.
+The TUI is a [Bubble Tea](https://github.com/charmbracelet/bubbletea) REPL for `thoth-agent`. It lives in `cmd/thoth-agent/` and provides an interactive chat experience with streaming responses, session management, and keyboard navigation.
 
 ## Component Structure
 
@@ -95,7 +95,7 @@ Total main area at min textarea: `(m.height - 9 + 2) + (1 + 2) = m.height - 4` (
 
 ### 4. Block Component Removal — Investigation
 
-**Finding**: `git log --all -p -- cmd/my-agent/` was searched for any use of a "block" component or model. No matches were found in the git history or current code. The `docs/notes/tui-feedback.md` mentions `InlineBlock` and `Block` as feature requests only — they were never implemented.
+**Finding**: `git log --all -p -- cmd/thoth-agent/` was searched for any use of a "block" component or model. No matches were found in the git history or current code. The `docs/notes/tui-feedback.md` mentions `InlineBlock` and `Block` as feature requests only — they were never implemented.
 
 **Status**: No block components to remove. Zero references in code.
 

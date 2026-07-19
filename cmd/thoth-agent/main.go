@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	"my-agent/internal/agent"
-	"my-agent/internal/llm"
-	"my-agent/internal/providers/ollama"
-	"my-agent/internal/tools"
-	"my-agent/internal/tui"
+	"github.com/DaviMGDev/thoth-agent/internal/agent"
+	"github.com/DaviMGDev/thoth-agent/internal/llm"
+	"github.com/DaviMGDev/thoth-agent/internal/providers/ollama"
+	"github.com/DaviMGDev/thoth-agent/internal/tools"
+	"github.com/DaviMGDev/thoth-agent/internal/tui"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -22,7 +22,7 @@ func main() {
 	// end-of-flags, so we check os.Args directly for the double-dash form).
 	for _, arg := range os.Args[1:] {
 		if arg == "-version" || arg == "--version" {
-			fmt.Println("my-agent version", Version)
+			fmt.Println("thoth-agent version", Version)
 			os.Exit(0)
 		}
 	}

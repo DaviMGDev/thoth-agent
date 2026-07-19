@@ -20,10 +20,10 @@
 
 | File | Changes |
 |------|---------|
-| `cmd/my-agent/tui.go` | Add `showSidePanel`/`userWantsSidePanel` fields; Ctrl+B handler; viewport key forwarding; layout reflow on toggle; resize guards |
-| `cmd/my-agent/main.go` | Add `tea.WithMouseCellMotion()` to program options |
-| `cmd/my-agent/session.go` | Add `AddMessage` with cap/prune logic |
-| `cmd/my-agent/styles.go` | Add side panel hidden style if needed |
+| `cmd/thoth-agent/tui.go` | Add `showSidePanel`/`userWantsSidePanel` fields; Ctrl+B handler; viewport key forwarding; layout reflow on toggle; resize guards |
+| `cmd/thoth-agent/main.go` | Add `tea.WithMouseCellMotion()` to program options |
+| `cmd/thoth-agent/session.go` | Add `AddMessage` with cap/prune logic |
+| `cmd/thoth-agent/styles.go` | Add side panel hidden style if needed |
 
 ## Files NOT Touched
 
@@ -38,7 +38,7 @@
 
 ### 1. Add layout state fields
 
-Location: `cmd/my-agent/tui.go`, `model` struct
+Location: `cmd/thoth-agent/tui.go`, `model` struct
 
 ```go
 type model struct {
@@ -159,7 +159,7 @@ func (m model) handleViewportKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 ### 6. Enable mouse wheel in main.go
 
-In `cmd/my-agent/main.go`, change:
+In `cmd/thoth-agent/main.go`, change:
 
 ```go
 // Before:

@@ -34,4 +34,4 @@ jobs:
         run: git fetch --tags --force
 
       - name: Build
-        run: go build -ldflags="-X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)" -o my-agent ./cmd/my-agent/
+        run: go build -ldflags="-X main.Version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)" -o thoth-agent ./cmd/thoth-agent/
