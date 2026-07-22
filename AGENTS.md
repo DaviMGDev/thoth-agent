@@ -16,7 +16,7 @@
 - **Run tests verbosely**: `go test -v ./internal/...`
 - **Run with coverage**: `go test -coverprofile=coverage.out ./internal/... ./cmd/...`
 
-> Tests live alongside their packages: `internal/llm/llm_test.go`, `internal/providers/ollama/ollama_test.go`, and `internal/agent/agent_test.go`. The `MockLLM` implementation in `internal/llm/` echoes the user's input and is designed to simplify unit testing of code that depends on the `LLM` interface.
+> Tests live alongside their packages: `internal/llm/llm_test.go`, `internal/providers/ollama/ollama_test.go`, `internal/agent/agent_test.go`, `internal/agent/hook_test.go`, `internal/tools/bash_test.go`, and `cmd/ouroboros/viper_test.go`. The `MockLLM` implementation in `internal/llm/` echoes the user's input and is designed to simplify unit testing of code that depends on the `LLM` interface.
 
 ## Code Style
 
@@ -47,18 +47,31 @@ ouroboros/
 ├── cmd/
 │   └── ouroboros/          # main() — CLI entry point
 ├── docs/
-│   └── adr/                  # Architecture Decision Records
+│   ├── adr/                  # Architecture Decision Records
+│   ├── discussions/          # Architecture discussions (e.g., 001-rename)
+│   └── plans/                # Implementation plans (e.g., 001-hooks)
+├── .github/
+│   └── workflows/ci.yml      # GitHub Actions CI
 ├── .golangci.yml             # Linter configuration
+├── AGENTS.md                 # This file — agent project instructions
+├── CHANGELOG.md              # Version history
+├── LICENSE                   # MIT license
 ├── Makefile                  # Build/test/lint/format targets
-└── .github/workflows/ci.yml  # GitHub Actions CI
+├── README.md                 # Project overview
+└── ROADMAP.md                # Planned features
 ```
 
 - **Key files**:
-  - `internal/llm/llm.go` — `LLM` interface definition, shared types (`Message`, `ChatRequest`, `ChatResponse`, `UsageStats`, `FinishReason`, `ChatStream`, `ChatChunk`, `ToolCallDelta`, `ToolCall`, `ToolDef`, `ToolFunction`, `Tool` interface), `MockLLM` implementation, and `MockChatStream` implementation
-  - `internal/providers/ollama/ollama.go` — `OllamaLLM` provider implementation for local Ollama instances
-  - `internal/agent/agent.go` — `Agent` interface, `FunctionCallingAgent` (concrete agent with tool-calling loop and parallel tool execution), `AgentStream`, `MockAgent`, `MockTool`
-  - `cmd/ouroboros/main.go` — CLI entry point (Cobra root command)
-  - `cmd/ouroboros/root.go` — Root command definition (flags, Viper config, agent execution pipeline)
+  - `internal/llm/llm.go` — `LLM` interface, shared types, `Tool` interface, `MockLLM`, `MockChatStream`
+  - `internal/providers/ollama/ollama.go` — `OllamaLLM` provider (stdlib only, connects to Ollama's `/api/chat`)
+  - `internal/agent/agent.go` — `Agent` interface, `FunctionCallingAgent` (tool-calling loop, parallel execution), `AgentStream`, `MockAgent`, `MockTool`
+  - `internal/agent/hook.go` — `Hook` interface and `BaseHook` for intercepting agent lifecycle events
+  - `internal/agent/hook_chain.go` — Hook chaining helpers (`applyBefore*` / `applyAfter*`)
+  - `internal/tools/bash.go` — `BashTool` for executing shell commands
+  - `internal/tools/file.go` — `ReadFileTool` for reading files
+  - `internal/tools/time.go` — `GetTimeTool` for current date/time
+  - `cmd/ouroboros/main.go` — CLI entry point (`main()` function)
+  - `cmd/ouroboros/root.go` — Cobra root command (flags, Viper config, agent execution pipeline)
 
 ## Architecture Decision Records
 
@@ -151,6 +164,8 @@ All flags support env var overrides with the `ORO_` prefix:
 | `--session` / `-s` | `ORO_SESSION` |
 | `--verbose` / `-v` | `ORO_VERBOSE` |
 | `--quiet` / `-q` | `ORO_QUIET` |
+| `--config` | — |
+| `--version` | — |
 
 Precedence: **CLI flags** > **env vars** > **config file** > **defaults**.
 
@@ -181,6 +196,8 @@ oro completion fish | source    # fish
 | `ToolCall` | A tool call made by the LLM (non-streaming) |
 | `ToolCallDelta` | Incremental tool call fragment for streaming |
 | `ToolDef` / `ToolFunction` | Serializable tool definition for provider API requests |
+| `AgentStream` | Streaming iterator (`Next()`, `Current()`, `Err()`, `Close()`) for agent execution events |
+| `AgentChunk` | One event from streaming agent execution: `Type`, `Content`, `ToolCall`, `ToolResult`, `Usage` |
 
 ## Messages & Roles
 
@@ -193,7 +210,7 @@ oro completion fish | source    # fish
 
 - `ChatStream` — iterator pattern (`Next()`, `Current()`, `Err()`, `Close()`) matching OpenAI Go SDK. The caller **must** call `Close()` when done.
 - `ChatChunk` — carries incremental `Content`, `ToolCalls` (as `ToolCallDelta`), `FinishReason`, and `Usage`.
-- `AgentStream` — same iterator pattern as `ChatStream`, yields `AgentChunk` events (`token`, `tool_call`, `tool_result`, `done`).
+- `AgentStream` — same iterator pattern as `ChatStream`, yields `AgentChunk` events (`token`, `tool_call`, `tool_start`, `tool_result`, `iteration_start`, `done`).
 
 ## Tool Calling
 
@@ -202,13 +219,57 @@ oro completion fish | source    # fish
 - The LLM can respond with tool calls in `Message.ToolCalls` (non-streaming) or `ChatChunk.ToolCalls` (streaming).
 - `FunctionCallingAgent` orchestrates the full loop: call LLM → if tool calls → execute tools in parallel (`sync.WaitGroup`) → feed results back → repeat until the LLM responds with content.
 
+## Hooks
+
+The [`Hook`](/internal/agent/hook.go) interface lets you intercept agent execution at six lifecycle points. Embed [`BaseHook`](/internal/agent/hook.go) and override only the methods you need.
+
+| # | Hook Method | When It Fires |
+|---|-------------|---------------|
+| P1 | `BeforeAgent` | Once when `Run`/`StreamRun` starts |
+| P2 | `BeforeLLM` | Before each LLM call inside the iteration loop |
+| P3 | `AfterLLM` | After each LLM call returns |
+| P4 | `BeforeTool` | Before each `tool.Execute()` call |
+| P5 | `AfterTool` | After each `tool.Execute()` completes |
+| P6 | `AfterAgent` | On every exit path (success, error, cancel, max-iterations) |
+
+- **Before** methods fire in forward order (hook[0] → hook[1] → ...).
+- **After** methods fire in reverse order (... → hook[1] → hook[0]).
+- Returning an error from any hook aborts the agent.
+
+The `FunctionCallingAgent.Hooks` field accepts `nil` or empty (no overhead).
+
+## Built-in Tools
+
+Three tools are registered by default in the CLI and ready to use:
+
+### `BashTool` (`internal/tools/bash.go`)
+
+Executes a shell command and returns stdout+stderr. Context-aware; supports output truncation (default 10,000 bytes).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `MaxOutput` | `int` | `10000` | Max combined output bytes (0 = use default) |
+
+### `ReadFileTool` (`internal/tools/file.go`)
+
+Reads a file from disk. Paths are restricted to the current working directory to prevent directory traversal.
+
+### `GetTimeTool` (`internal/tools/time.go`)
+
+Returns the current date and time, optionally in a specified IANA timezone (e.g. `America/Sao_Paulo`, `Europe/London`, `UTC`).
+
 ## Key Files
 
 - `internal/llm/llm.go` — `LLM` interface, all shared types, `Tool` interface, `MockLLM`, `MockChatStream`
 - `internal/providers/ollama/ollama.go` — `OllamaLLM` provider (stdlib only, connects to Ollama's `/api/chat`)
 - `internal/agent/agent.go` — `Agent` interface, `FunctionCallingAgent`, `AgentStream`, `MockAgent`, `MockTool`
 - `internal/agent/hook.go` — `Hook` interface and `BaseHook` for intercepting agent lifecycle events
-- `cmd/ouroboros/main.go` — CLI entry point (flag-based, streaming output, session persistence)
+- `internal/agent/hook_chain.go` — Hook chaining helpers (`applyBefore*` / `applyAfter*`)
+- `internal/tools/bash.go` — `BashTool` for executing shell commands
+- `internal/tools/file.go` — `ReadFileTool` for reading files
+- `internal/tools/time.go` — `GetTimeTool` for current date/time
+- `cmd/ouroboros/main.go` — CLI entry point (`main()` function)
+- `cmd/ouroboros/root.go` — Cobra root command (flags, Viper config, agent execution pipeline, session persistence)
 
 ## Providers
 
