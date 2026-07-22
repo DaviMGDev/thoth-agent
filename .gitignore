@@ -14,10 +14,6 @@ coverage.html
 .DS_Store
 
 # Development artifacts
-record.gif
-record.sh
-record/
-screenshot.sh
 Thumbs.db
 
 # Editor temp files

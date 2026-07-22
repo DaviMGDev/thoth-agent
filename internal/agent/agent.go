@@ -67,9 +67,9 @@ type AgentChunk struct {
 	ToolResult *ToolResultEvent   `json:"tool_result,omitempty"`
 	Usage      *llm.UsageStats    `json:"usage,omitempty"`
 	Done       bool               `json:"done,omitempty"`
-	Error      string             `json:"error,omitempty"`      // non-empty when the agent encounters a fatal error
-	Iteration  int                `json:"iteration,omitempty"`  // current iteration index (for iteration_start)
-	MaxIter    int                `json:"max_iter,omitempty"`   // max iterations for this run (for iteration_start)
+	Error      string             `json:"error,omitempty"`     // non-empty when the agent encounters a fatal error
+	Iteration  int                `json:"iteration,omitempty"` // current iteration index (for iteration_start)
+	MaxIter    int                `json:"max_iter,omitempty"`  // max iterations for this run (for iteration_start)
 }
 
 // AgentStream is a streaming iterator over agent execution events.

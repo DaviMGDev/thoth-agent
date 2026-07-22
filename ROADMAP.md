@@ -4,22 +4,16 @@ Planned features and improvements for thoth-agent.
 
 ## Session Management
 
-Multi-session conversation management, a prerequisite for the TUI.
+Multi-session conversation management via the `--session` flag in the CLI, with JSON file persistence.
 
-- Create, switch between, and delete sessions
-- Each session maintains independent conversation history (`[]llm.Message`)
-- Sessions stored in-memory (initial), with optional persistence later
-- Active session highlighted in sidepanel via `▶` indicator
-- Sessions tracked by numeric ID and display name
+- Load/save conversation history from a session file
+- Each session maintains full message history (`[]llm.Message`)
+- Sessions stored as JSON files, human-readable and portable
+- Supports multi-turn conversations across CLI invocations
 
-## REPL TUI
+## REPL TUI _(moved to `tui` branch)_
 
-Build an interactive terminal UI for chatting with agents.
-
-- Use [Bubble Tea](https://github.com/charmbracelet/bubbletea) for the TUI framework
-- Features: streaming responses, tool call visibility, model switching, conversation history
-- Replace current basic REPL in `cmd/thoth-agent/main.go`
-- May evolve into a full TUI with session management panel (requires more terminal control than a simple REPL)
+> The TUI has been extracted to the `tui` branch for independent development. See that branch for the Bubble Tea-based interactive terminal UI with streaming responses, session management, and keyboard navigation.
 
 ## Configurable Agent
 

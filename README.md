@@ -6,6 +6,38 @@ A Go-based LLM agent framework with a generic chat completion interface, tool-ca
 
 > **Version**: Run `thoth-agent --version` or see [CHANGELOG](./CHANGELOG.md).
 
+## Quick Start (CLI)
+
+```bash
+# Build
+go build -o thoth-agent ./cmd/thoth-agent/
+
+# Single prompt
+./thoth-agent -p "What is 2+2?"
+
+# Pipe from stdin
+echo "Hello" | ./thoth-agent -q
+
+# Persistent multi-turn conversation
+./thoth-agent -s ./chat.json -p "My name is Davi"
+./thoth-agent -s ./chat.json -p "What's my name?"
+
+# Verbose mode (see tool calls)
+./thoth-agent -v -p "List files in /tmp"
+```
+
+| Flag | Shorthand | Description |
+|------|-----------|-------------|
+| `--prompt` | `-p` | User prompt (reads from stdin if omitted) |
+| `--model` | `-m` | Model name (default: `gemma4:31b-cloud`) |
+| `--session` | `-s` | Session file for persistent conversation context |
+| `--verbose` | `-v` | Show tool calls and iteration info on stderr |
+| `--quiet` | `-q` | Only print final assistant response |
+| `--provider-base-url` | — | Ollama base URL (default: `http://localhost:11434`) |
+| `--version` | — | Print version and exit |
+
+> **Note**: The TUI (interactive terminal REPL) has been moved to the `tui` branch for independent development.
+
 ## Overview
 
 `thoth-agent` defines a minimal `LLM` interface that abstracts provider-specific LLM interactions behind three methods:
@@ -65,13 +97,7 @@ func main() {
 }
 ```
 
-```bash
-go run ./cmd/thoth-agent/
-# Output: Chat Response: Hello, how are you?
-#         Hello from streaming!
-#         [stop] tokens: 42
-#         Streamed complete: Hello from streaming!
-```
+
 
 ### Streaming Chat
 
