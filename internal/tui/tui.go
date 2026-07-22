@@ -159,6 +159,36 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // ---------------------------------------------------------------------------
+// Layout calculation
+// ---------------------------------------------------------------------------
+
+// recalcLayout recalculates VP.Width and TextArea width based on the current
+// terminal dimensions and sidebar visibility. Does not change VP.Height.
+// Called from handleWindowSize and on sidebar toggle.
+func (m *Model) recalcLayout() {
+	sidebarPx := 0
+	if m.ShowSidebar {
+		spTotal := m.Width * 25 / 100
+		maxSp := m.Width * 40 / 100
+		if spTotal > maxSp {
+			spTotal = maxSp
+		}
+		if spTotal < 10 {
+			spTotal = 10
+		}
+		sidebarPx = spTotal
+	}
+
+	mainContent := m.Width - sidebarPx - 4
+	if mainContent < 16 {
+		mainContent = 16
+	}
+
+	m.VP.Width = mainContent
+	m.TextArea.SetWidth(mainContent - 2)
+}
+
+// ---------------------------------------------------------------------------
 // Window resize
 // ---------------------------------------------------------------------------
 
@@ -178,28 +208,7 @@ func (m Model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	}
 
 	// Layout calculation
-	// Left sidebar: 25% width, right main area: remaining
-	overhead := 4 // border + padding on one column
-	var spTotal int
-	if m.ShowSidebar {
-		spTotal = m.Width * 25 / 100
-		// Cap sidebar at 40% of screen width; minimum 10
-		maxSp := m.Width * 40 / 100
-		if spTotal > maxSp {
-			spTotal = maxSp
-		}
-		if spTotal < 10 {
-			spTotal = 10
-		}
-	}
-
-	mainContent := m.Width - spTotal - overhead
-	if !m.ShowSidebar {
-		mainContent = m.Width - overhead
-	}
-	if mainContent < 16 {
-		mainContent = 16
-	}
+	m.recalcLayout()
 
 	// Right panel: viewport on top, textarea at bottom
 	internalTaHeight := m.TextArea.Height()
@@ -208,10 +217,7 @@ func (m Model) handleWindowSize(msg tea.WindowSizeMsg) (tea.Model, tea.Cmd) {
 	if internalVpHeight < 1 {
 		internalVpHeight = 1
 	}
-
-	m.VP.Width = mainContent - 2
 	m.VP.Height = internalVpHeight
-	m.TextArea.SetWidth(mainContent - 2)
 
 	// Refresh viewport
 	m.VP.SetContent(m.renderMessages())
@@ -244,6 +250,7 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case tea.KeyCtrlG:
 		m.UserWantsSidebar = !m.UserWantsSidebar
 		m.ShowSidebar = m.UserWantsSidebar
+		m.recalcLayout()
 		m.refreshViewport()
 		return &m, nil
 
@@ -587,9 +594,8 @@ func (m Model) renderMain(totalWidth int) string {
 		contentWidth = 16
 	}
 
-	m.VP.Width = contentWidth
-
-	// Viewport content includes the session header (set in renderMessages)
+	// Viewport content was rendered at m.VP.Width (set by recalcLayout).
+	// Do NOT override VP.Width here — View() uses it to truncate lines.
 	vpContent := m.VP.View()
 
 	// Spinner when loading
@@ -638,9 +644,9 @@ func (m Model) renderMessages() string {
 	var b strings.Builder
 
 	// Session header inside the viewport (matching go-chat pattern)
-	header := RenderInLineBlock(" "+active.Name+" ", vpW+4)
+	header := RenderInLineBlock(" "+active.Name+" ", vpW)
 	b.WriteString(header)
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 
 	hasMessages := len(active.Messages) > 0
 	hasStreamingText := m.StreamingText != ""
@@ -653,13 +659,14 @@ func (m Model) renderMessages() string {
 	}
 
 	// Calculate message block width
-	msgW := vpW + 2
+	// Width(n) + RoundedBorder = n+2 total, so subtract 2 to match viewport
+	msgW := vpW - 2
 	if msgW < 10 {
 		msgW = 10
 	}
 
 	// Create markdown renderer for the message content width
-	mdWidth := msgW - 2
+	mdWidth := msgW - 4
 	if mdWidth < 8 {
 		mdWidth = 8
 	}
@@ -711,7 +718,7 @@ func (m Model) renderUserMessage(b *strings.Builder, msg llm.Message, msgW int, 
 		}
 	}
 	block := messageBlockStyle(bubbleClr, msgW).Render(content)
-	fmt.Fprintf(b, "%s\n%s\n\n", label, block)
+	fmt.Fprintf(b, "%s\n%s\n", label, block)
 }
 
 func (m Model) renderAssistantMessage(b *strings.Builder, msg llm.Message, msgW int, mdRenderer *glamour.TermRenderer, mdErr error) {
@@ -724,7 +731,7 @@ func (m Model) renderAssistantMessage(b *strings.Builder, msg llm.Message, msgW 
 		}
 	}
 	block := messageBlockStyle(lipgloss.Color("214"), msgW).Render(content)
-	fmt.Fprintf(b, "%s\n%s\n\n", label, block)
+	fmt.Fprintf(b, "%s\n%s\n", label, block)
 }
 
 func (m Model) renderToolMessage(b *strings.Builder, msg llm.Message, msgW int) {
@@ -740,10 +747,10 @@ func (m Model) renderToolMessage(b *strings.Builder, msg llm.Message, msgW int) 
 	label := senderLabelStyle(lipgloss.Color("243")).Render(name)
 	if result != "" {
 		block := messageBlockStyle(lipgloss.Color("243"), msgW).Render(result)
-		fmt.Fprintf(b, "%s\n%s\n\n", label, block)
+		fmt.Fprintf(b, "%s\n%s\n", label, block)
 	} else {
 		b.WriteString(toolMsgStyle.Render(name))
-		b.WriteString("\n\n")
+		b.WriteString("\n")
 	}
 }
 
@@ -751,7 +758,7 @@ func (m Model) renderToolDisplay(b *strings.Builder, tool string, msgW int) {
 	// Render a live (in-progress) tool display
 	label := senderLabelStyle(lipgloss.Color("243")).Render(tool)
 	b.WriteString(label)
-	b.WriteString("\n\n")
+	b.WriteString("\n")
 }
 
 func (m Model) renderStreamingContent(b *strings.Builder, streaming string, msgW int, mdRenderer *glamour.TermRenderer, mdErr error) {
@@ -764,7 +771,7 @@ func (m Model) renderStreamingContent(b *strings.Builder, streaming string, msgW
 		}
 	}
 	block := messageBlockStyle(lipgloss.Color("214"), msgW).Render(content)
-	fmt.Fprintf(b, "%s\n%s\n\n", label, block)
+	fmt.Fprintf(b, "%s\n%s\n", label, block)
 }
 
 // ---------------------------------------------------------------------------
