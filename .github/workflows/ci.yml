@@ -21,6 +21,9 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Check go.mod tidy
+        run: go mod tidy -diff
+
       - name: Check formatting
         run: test -z "$(gofmt -l ./internal/ ./cmd/)"
 
