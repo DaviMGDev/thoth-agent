@@ -1,11 +1,15 @@
-.PHONY: all build test lint fmt clean coverage
+.PHONY: all build test lint fmt clean coverage deps
 
 BINARY := oro
 
-all: fmt lint test build
+all: deps fmt lint test build
 
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -ldflags="-X main.Version=$(VERSION)"
+
+deps:
+	go mod tidy
+	go mod verify
 
 build:
 	go build $(LDFLAGS) -o $(BINARY) ./cmd/ouroboros/
