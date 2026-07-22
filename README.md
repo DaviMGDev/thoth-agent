@@ -1,5 +1,7 @@
 # Ouroboros
 
+<p align="center"><img src="ouroboros.png" alt="Ouroboros" width="200"></p>
+
 [![CI](https://github.com/DaviMGDev/ouroboros/actions/workflows/ci.yml/badge.svg)](https://github.com/DaviMGDev/ouroboros/actions/workflows/ci.yml)
 
 A Go-based LLM agent framework with a generic chat completion interface, tool-calling agent loop, and built-in mock implementation.
